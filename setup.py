@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='sysdash',
-    version='0.2',
+    version='0.3',
     packages=find_packages(),
     description='System information utility',
     long_description=open('README.md').read(),
