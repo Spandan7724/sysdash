@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='sysdash',
-    version='0.1',
+    version='0.2',
     packages=find_packages(),
     description='System information utility',
     long_description=open('README.md').read(),
@@ -15,6 +15,9 @@ setup(
         'GPUtil',
         'uptime',
         'rich',
+        'py-cpuinfo',
+        'wmi',
+        'screeninfo',       
     ],
     entry_points={
         'console_scripts': [

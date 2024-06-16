@@ -9,13 +9,20 @@ from rich.table import Table
 from rich.live import Live
 from rich.panel import Panel
 from rich.box import ROUNDED
+import platform
+import socket
+import wmi
+import subprocess
 
 console = Console()
 
 
 def get_cpu_info():
     cpu_usage = psutil.cpu_percent(interval=1)
-    return f"{cpu_usage}%"
+    per_cpu_usage = psutil.cpu_percent(interval=1, percpu=True)
+    per_cpu_info = " | ".join(
+        [f"Core {i}: {usage}%" for i, usage in enumerate(per_cpu_usage)])
+    return f"Total: {cpu_usage}%\n{per_cpu_info}"
 
 
 def get_memory_info():
@@ -44,18 +51,54 @@ def get_gpu_info():
     return "\n".join(info)
 
 
+def get_motherboard_info():
+    c = wmi.WMI()
+    for board_id in c.Win32_BaseBoard():
+        return board_id.Product
+    
+def get_packages_info():
+    try:
+        choco_packages = subprocess.check_output(['choco', 'list', '--local-only'], shell=True).decode().strip().split('\n')
+        scoop_packages = subprocess.check_output(['scoop', 'list'], shell=True).decode().strip().split('\n')
+        return f"{len(choco_packages)-1} (choco), {len(scoop_packages)-2} (scoop)"  # Adjust for headers
+    except Exception as e:
+        return "Error fetching packages"
+
+def get_shell_info():
+    shell = os.getenv('SHELL') or os.getenv('COMSPEC')
+    return shell
+
+def get_resolution():
+    try:
+        from screeninfo import get_monitors
+        monitor = get_monitors()[0]
+        return f"{monitor.width}x{monitor.height}"
+    except ImportError:
+        return "Resolution info requires screeninfo library"    
+
+
 def get_system_info():
+    os_info = f"{platform.system()} {platform.release()} [{
+        platform.architecture()[0]}]"
+    host = socket.gethostname()
+    kernel = platform.version()
+    motherboard = get_motherboard_info()
+    packages = get_packages_info()
+    shell = get_shell_info()
+    resolution = get_resolution()
+    terminal = os.getenv('TERM_PROGRAM', 'Windows Terminal')
+
     info = {
-        "OS": "Windows 11 Home Single Language [64-bit]",
-        "Host": "LENOVO 82JU",
-        "Kernel": "10.0.22631.0",
-        "Motherboard": "LENOVO LNVNB161216",
+        "OS": os_info,
+        "Host": host,
+        "Kernel": kernel,
+        "Motherboard": motherboard,
         "Uptime": get_uptime(),
-        "Packages": "27 (choco), 2 (scoop)",
-        "Shell": "PowerShell v7.4.2",
-        "Resolution": "1536x864",
-        "Terminal": "Windows Terminal",
-        "CPU": "AMD Ryzen 7 5800H with Radeon Graphics",
+        "Packages": packages,
+        "Shell": shell,
+        "Resolution": resolution,
+        "Terminal": terminal,
+        "CPU": get_cpu_info(),
         "GPU": get_gpu_info(),
         "Memory": get_memory_info(),
         "Disk (C:)": get_disk_info(),
